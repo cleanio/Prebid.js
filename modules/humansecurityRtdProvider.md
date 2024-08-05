@@ -6,15 +6,16 @@ Module Type: Rtd Provider
 Maintainer: mykyta.kikot@humansecurity.com
 ```
 
-The Human Security RTD submodule offers a comprehensive defense against ad fraud and bot traffic for publishers. 
-It ensures real-time protection by blocking invalid traffic, detecting and preventing bot-generated ad interactions, and safeguarding ad inventory from sophisticated fraud schemes.
+The Human Security RTD submodule offers pre-bid signal collection, aimed to improve real-time protection against all sorts of invalid traffic, such as
+bot-generated ad interactions or sophisticated ad fraud schemes. It generates Human Security token, which then can be consumed by vendors,
+sent within bid requests, and used for bot detection on the backend.
 
 
 ## Build
 First, make sure to add the Human Security submodule to your Prebid.js package with:
 
 ```bash
-gulp build --modules="rtdModule,humansecurityRtdProvider,..."  
+gulp build --modules="rtdModule,humansecurityRtdProvider,..."
 ```
 
 > `rtdModule` is a required module to use Human Security RTD module.
@@ -28,21 +29,17 @@ This module is configured as part of the `realTimeData.dataProviders` object.
 pbjs.setConfig({
     realTimeData: {
         dataProviders: [{
-            name: 'humansecurity',
+            name: 'humansecurityRtd',
             params: {
                 clientId: 'ABC123', // optional, can be omitted
-                bidders: ['appnexus'], // optional, can be omitted
+                verbose: true, // optional, should be false in production
             }
         }]
     }
 });
 ```
 
-## Configuration parameters
+Parameters:
 
-#### `clientId` - Optional, string
-- The client ID is provided by Human Security only for specific clients. 
-
-#### `bidders` - Optional, Array<string>
-- When this parameter is included, it should be an array of strings that correspond to the bidder codes of the Prebid adapters, the ortb2 object of which will be modified. 
-If this parameter is not included, the RTD module will default to updating the ortb2 object for all bid adapters used on the page.
+* `clientId` - optional, string. Contact Human Security to receive client ID if you need advanced reporting.
+* `verbose` - optional, boolean. Only set to `true` if troubleshooting issues.

@@ -9,13 +9,13 @@
 
 import { submodule } from '../src/hook.js';
 import {
-  logError,
+  prefixLog,
   mergeDeep,
   generateUUID,
   getWindowSelf,
-  getWindowLocation
-} from '../src/utils';
-import { getGlobal } from '../src/prebidGlobal';
+} from '../src/utils.js';
+import { getRefererInfo } from '../src/refererDetection.js';
+import { getGlobal } from '../src/prebidGlobal.js';
 import { loadExternalScript } from '../src/adloader.js';
 
 /**
@@ -24,63 +24,122 @@ import { loadExternalScript } from '../src/adloader.js';
  * @typedef {import('../modules/rtdModule/index.js').UserConsentData} UserConsentData
  */
 
-const SUBMODULE_NAME = 'humansecurity';
+const SUBMODULE_NAME = 'humansecurityRtd';
 const SCRIPT_URL = 'https://sonar.script.ac/prebid/rtd.js';
-const LOG_PREFIX = `[${SUBMODULE_NAME} RTD Submodule]:`;
 
-let enrichmentData = { hmns: { } };
+const { logInfo, logWarn, logError } = prefixLog(`[${SUBMODULE_NAME}]:`);
+
+/** @type {string} */
+let clientId = '';
+
+/** @type {boolean} */
+let verbose = false;
+
+/** @type {string} */
+let sessionId = '';
+
+/** @type {Object} */
+let hmnsData = { };
+
 /**
- * The function is used to update the 'enrichmentData' variable with the enrichment data from the injected script.
- * @param {Object} data
+ * Submodule registration
  */
-function updateEnrichmentData(data) {
-  if (!data.hmns || typeof data.hmns !== 'object')
-    return;
+function main() {
+  submodule('realTimeData', /** @type {RtdSubmodule} */ ({
+    name: SUBMODULE_NAME,
 
-  enrichmentData = mergeDeep({}, { hmns: data.hmns });
+    //
+    init: (config, userConsent) => {
+      try {
+        load(config);
+        return true;
+      } catch (err) {
+        logError('init', err.message);
+        return false;
+      }
+    },
+
+    getBidRequestData: onGetBidRequestData
+  }));
 }
 
 /**
- * The function to be called upon module init.
- * Injects the Human Security script into the page to provide ad fraud protection.
+ * Injects Human Security script on the page to facilitate pre-bid signal collection.
  * @param {SubmoduleConfig} config
  */
-function injectHumanSecurityScript(config) {
-  const sid = generateUUID();
-  const customerId = config?.params?.customerId;
-
-  const scriptOnloadHandler = function () {
-    const api = `${sid}_a`;
-    const wnd = getWindowSelf();
-    if (typeof wnd[api] === 'object' && typeof wnd[api].run === 'function')
-      wnd[api].run({ dependencyRef: getGlobal() }, updateEnrichmentData);
-  };
-  const scriptUrl = `${SCRIPT_URL}?h=${getWindowLocation().hostname}${customerId ? `&c=${customerId}` : ''}`;
-  const scriptAttributes = { 'data-sid': sid };
-
-  loadExternalScript(scriptUrl, SUBMODULE_NAME, scriptOnloadHandler, null, scriptAttributes);
-}
-
-/**
- * The function to be called upon module init.
- * If config parameters are passed, the function validates them and throws an error if they are incorrectly provided.
- * @param {SubmoduleConfig} config
- */
-function readConfig(config) {
-  if (!config.params)
-    return;
-
-  if (config.params.customerId && typeof config.params.customerId !== 'string') {
-    throw new Error(`${LOG_PREFIX} If specified, the 'customerId' parameter in the module configuration must be a string.`);
+function load(config) {
+  // By default, this submodule loads the generic implementation script
+  // only identified by the referrer information. In the future, if publishers
+  // want to have analytics where their websites are grouped, they can request
+  // Client ID from human, pass it here, and it will enable advanced reporting
+  clientId = config?.params?.clientId || '';
+  if (clientId && (typeof clientId !== 'string' || !/^\w{3,16}$/.test(clientId))) {
+    throw new Error(`The 'clientId' parameter must be a short alphanumeric string`);
   }
 
-  if (config.params.bidders) {
-    if (!Array.isArray(config.params.bidders)) {
-      throw new Error(`${LOG_PREFIX} If specified, the 'bidders' parameter in the module configuration must be an array.`);
-    }
+  // Load/reset the state
+  verbose = !!config?.params?.verbose;
+  sessionId = generateUUID();
+  hmnsData = {};
 
-    if (config.params.bidders.length === 0) {
-      throw new Error(`${LOG_PREFIX} If specified, the 'bidders' parameter array in the module configuration must contain at least one bidder code.`)
+  // We rely on prebid implementation to get the best domain possible here
+  // In some cases, it still might be null, though
+  const refDomain = getRefererInfo().domain || '';
+
+  // Once loaded, the implementation script will publish an API using
+  // the session ID value it was given in data attributes
+  const scriptAttrs = { 'data-sid': sessionId };
+  const scriptUrl = `${SCRIPT_URL}?r=${refDomain}${clientId ? `&c=${clientId}` : ''}`;
+
+  loadExternalScript(scriptUrl, SUBMODULE_NAME, onImplLoaded, null, scriptAttrs);
+}
+
+/**
+ * The callback to loadExternalScript
+ * Establishes the bridge between this RTD submodule and the loaded implementation
+ */
+function onImplLoaded() {
+  // We then get a hold on this script using the knowledge of this session ID
+  const wnd = getWindowSelf();
+  const impl = wnd[`sonar_${sessionId}`];
+  if (typeof impl !== 'object' || typeof impl.connect !== 'function') {
+    verbose && logWarn('onload', 'Unable to access the implementation script');
+    return;
+  }
+
+  // And set up a bridge between the RTD submodule and the implementation.
+  // The first argument is used to identify the caller.
+  // The callback might be called multiple times to update the signals
+  // once more precise information is available.
+  impl.connect(getGlobal(), onImplMessage);
+}
+
+/**
+ * The bridge function will be called by the implementation script
+ * to update the token information or report errors
+ * @param {Object} msg
+ */
+function onImplMessage(msg) {
+  if (typeof msg !== 'object') {
+    return;
+  }
+
+  switch (msg.type) {
+    case 'hmns': {
+      hmnsData = mergeDeep({}, msg.data || {});
+      break;
+    }
+    case 'error': {
+      logError('impl', msg.data || '');
+      break;
+    }
+    case 'warn': {
+      verbose && logWarn('impl', msg.data || '');
+      break;
+    }
+    case 'info': {
+      verbose && logInfo('impl', msg.data || '');
+      break;
     }
   }
 }
@@ -95,37 +154,12 @@ function readConfig(config) {
  * @param {UserConsentData} userConsent
  */
 function onGetBidRequestData(reqBidsConfigObj, callback, config, userConsent) {
-  const fragment = { ext: enrichmentData };
-  if (!config.params || !config.params.bidders) {
-    mergeDeep(reqBidsConfigObj.ortb2Fragments.global, fragment);
-  } else {
-    config.params.bidders.forEach((bidderCode) => {
-      mergeDeep(reqBidsConfigObj.ortb2Fragments.bidder, { [bidderCode]: fragment });
-    });
-  }
+  // Add ext.hmns to the global ORTB data for all vendors to use
+  // At the time of writing this submodule, ext.hmns is an object defined
+  // internally by humansecurity, and it currently contains "v1" field
+  // with a token that contains collected signals about this session.
+  mergeDeep(reqBidsConfigObj.ortb2Fragments.global, { ext: { hmns: hmnsData } });
   callback();
-}
-
-/**
- * The function which performs submodule registration.
- */
-function registerHumanMediaGuardSubmodule() {
-  submodule('realTimeData', /** @type {RtdSubmodule} */ ({
-    name: SUBMODULE_NAME,
-
-    init: (config, userConsent) => {
-      try {
-        readConfig(config);
-        injectHumanSecurityScript(config);
-
-        return true;
-      } catch (err) {
-        logError(LOG_PREFIX, err.message);
-        return false;
-      }
-    },
-    getBidRequestData: onGetBidRequestData
-  }));
 }
 
 /**
@@ -135,11 +169,11 @@ function registerHumanMediaGuardSubmodule() {
 export const __TEST__ = {
   SUBMODULE_NAME,
   SCRIPT_URL,
-  updateEnrichmentData,
-  onGetBidRequestData,
-  readConfig,
-  injectHumanSecurityScript,
-  registerHumanMediaGuardSubmodule
-}
+  main,
+  load,
+  onImplLoaded,
+  onImplMessage,
+  onGetBidRequestData
+};
 
-registerHumanMediaGuardSubmodule();
+main();
