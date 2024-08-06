@@ -24,7 +24,7 @@ import { loadExternalScript } from '../src/adloader.js';
  * @typedef {import('../modules/rtdModule/index.js').UserConsentData} UserConsentData
  */
 
-const SUBMODULE_NAME = 'humansecurityRtd';
+const SUBMODULE_NAME = 'humansecurity';
 const SCRIPT_URL = 'https://sonar.script.ac/prebid/rtd.js';
 
 const { logInfo, logWarn, logError } = prefixLog(`[${SUBMODULE_NAME}]:`);

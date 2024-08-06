@@ -3,7 +3,7 @@
 ```
 Module Name: Human Security Rtd provider
 Module Type: Rtd Provider
-Maintainer: mykyta.kikot@humansecurity.com
+Maintainer: alexey@humansecurity.com
 ```
 
 The Human Security RTD submodule offers pre-bid signal collection, aimed to improve real-time protection against all sorts of invalid traffic, such as
@@ -29,7 +29,7 @@ This module is configured as part of the `realTimeData.dataProviders` object.
 pbjs.setConfig({
     realTimeData: {
         dataProviders: [{
-            name: 'humansecurityRtd',
+            name: 'humansecurity',
             params: {
                 clientId: 'ABC123', // optional, can be omitted
                 verbose: true, // optional, should be false in production
@@ -41,5 +41,5 @@ pbjs.setConfig({
 
 Parameters:
 
-* `clientId` - optional, string. Contact Human Security to receive client ID if you need advanced reporting.
+* `clientId` - optional, string. Should you need advanced reporting, contact prebid@humansecurity.com to receive client ID.
 * `verbose` - optional, boolean. Only set to `true` if troubleshooting issues.
