@@ -111,39 +111,42 @@ describe('humansecurity RTD module', function () {
       sandbox2.restore();
     });
 
-    it('should add empty ext.hmns to global ortb2 when data is yet to be received from the impl script', () => {
+    it('should add empty device.ext.hmns to global ortb2 when data is yet to be received from the impl script', () => {
       load({ });
 
       onGetBidRequestData(reqBidsConfig, callbackSpy, { params: {} }, {});
 
       expect(callbackSpy.calledOnce).to.be.true;
-      expect(reqBidsConfig.ortb2Fragments.global).to.have.own.property('ext');
-      expect(reqBidsConfig.ortb2Fragments.global.ext).to.have.own.property('hmns').which.is.an('object').that.deep.equals({});
+      expect(reqBidsConfig.ortb2Fragments.global).to.have.own.property('device');
+      expect(reqBidsConfig.ortb2Fragments.global.device).to.have.own.property('ext');
+      expect(reqBidsConfig.ortb2Fragments.global.device.ext).to.have.own.property('hmns').which.is.an('object').that.deep.equals({});
     });
 
-    it('should add the default ext.hmns to global ortb2 when no "hmns" data was yet received', () => {
+    it('should add the default device.ext.hmns to global ortb2 when no "hmns" data was yet received', () => {
       load({ });
 
       onImplMessage({ type: 'info', data: 'not a hmns message' });
       onGetBidRequestData(reqBidsConfig, callbackSpy, { params: {} }, {});
 
       expect(callbackSpy.calledOnce).to.be.true;
-      expect(reqBidsConfig.ortb2Fragments.global).to.have.own.property('ext');
-      expect(reqBidsConfig.ortb2Fragments.global.ext).to.have.own.property('hmns').which.is.an('object').that.deep.equals({});
+      expect(reqBidsConfig.ortb2Fragments.global).to.have.own.property('device');
+      expect(reqBidsConfig.ortb2Fragments.global.device).to.have.own.property('ext');
+      expect(reqBidsConfig.ortb2Fragments.global.device.ext).to.have.own.property('hmns').which.is.an('object').that.deep.equals({});
     });
 
-    it('should add ext.hmns with received tokens to global ortb2 when the data was received', () => {
+    it('should add device.ext.hmns with received tokens to global ortb2 when the data was received', () => {
       load({ });
 
       onImplMessage({ type: 'hmns', data: hmnsData });
       onGetBidRequestData(reqBidsConfig, callbackSpy, { params: {} }, {});
 
       expect(callbackSpy.calledOnce).to.be.true;
-      expect(reqBidsConfig.ortb2Fragments.global).to.have.own.property('ext');
-      expect(reqBidsConfig.ortb2Fragments.global.ext).to.have.own.property('hmns').which.is.an('object').that.deep.equals(hmnsData);
+      expect(reqBidsConfig.ortb2Fragments.global).to.have.own.property('device');
+      expect(reqBidsConfig.ortb2Fragments.global.device).to.have.own.property('ext');
+      expect(reqBidsConfig.ortb2Fragments.global.device.ext).to.have.own.property('hmns').which.is.an('object').that.deep.equals(hmnsData);
     });
 
-    it('should update ext.hmns with new data', () => {
+    it('should update device.ext.hmns with new data', () => {
       load({ });
 
       onImplMessage({ type: 'hmns', data: { 'v1': 'should be overwritten' } });
@@ -151,8 +154,9 @@ describe('humansecurity RTD module', function () {
       onGetBidRequestData(reqBidsConfig, callbackSpy, { params: {} }, {});
 
       expect(callbackSpy.calledOnce).to.be.true;
-      expect(reqBidsConfig.ortb2Fragments.global).to.have.own.property('ext');
-      expect(reqBidsConfig.ortb2Fragments.global.ext).to.have.own.property('hmns').which.is.an('object').that.deep.equals(hmnsData);
+      expect(reqBidsConfig.ortb2Fragments.global).to.have.own.property('device');
+      expect(reqBidsConfig.ortb2Fragments.global.device).to.have.own.property('ext');
+      expect(reqBidsConfig.ortb2Fragments.global.device.ext).to.have.own.property('hmns').which.is.an('object').that.deep.equals(hmnsData);
     });
   });
 

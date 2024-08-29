@@ -154,11 +154,11 @@ function onImplMessage(msg) {
  * @param {UserConsentData} userConsent
  */
 function onGetBidRequestData(reqBidsConfigObj, callback, config, userConsent) {
-  // Add ext.hmns to the global ORTB data for all vendors to use
-  // At the time of writing this submodule, ext.hmns is an object defined
+  // Add device.ext.hmns to the global ORTB data for all vendors to use
+  // At the time of writing this submodule, "hmns" is an object defined
   // internally by humansecurity, and it currently contains "v1" field
   // with a token that contains collected signals about this session.
-  mergeDeep(reqBidsConfigObj.ortb2Fragments.global, { ext: { hmns: hmnsData } });
+  mergeDeep(reqBidsConfigObj.ortb2Fragments.global, { device: { ext: { hmns: hmnsData } } });
   callback();
 }
 
