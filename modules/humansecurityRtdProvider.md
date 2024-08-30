@@ -1,7 +1,7 @@
 # Overview
 
 ```
-Module Name: Human Security Rtd provider
+Module Name: HUMAN Security Rtd provider
 Module Type: Rtd Provider
 Maintainer: alexey@humansecurity.com
 ```
@@ -14,7 +14,7 @@ such as bot-generated ad interactions or sophisticated ad fraud schemes.
 
 ## How does it work?
 
-HUMAN Security RTD submodule generates a HUMAN Security token, which then can be consumed by vendors,
+HUMAN Security RTD submodule generates a HUMAN Security token, which then can be consumed by adapters,
 sent within bid requests, and used for bot detection on the backend.
 
 ## Key Facts about the HUMAN Security RTD Submodule
@@ -29,13 +29,14 @@ sent within bid requests, and used for bot detection on the backend.
 
 
 # Build
-First, make sure to add the Human Security submodule to your Prebid.js package with:
+
+First, make sure to add the HUMAN Security submodule to your Prebid.js package with:
 
 ```bash
-gulp build --modules="rtdModule,humansecurityRtdProvider,..."
+gulp build --modules="rtdModule,humansecurity,..."
 ```
 
-> `rtdModule` is a required module to use Human Security RTD module.
+> `rtdModule` is a required module to use HUMAN Security RTD module.
 
 
 # Configuration
@@ -76,7 +77,6 @@ pbjs.setConfig({
 
 ## Supported parameters
 
-{: .table .table-bordered .table-striped }
 | Name             |Type           | Description                                                         | Required |
 | :--------------- | :------------ | :------------------------------------------------------------------ |:---------|
 | `clientId`  | String | Should you need advanced reporting, contact [prebid@humansecurity.com](prebid@humansecurity.com) to receive client ID. | No |
@@ -99,8 +99,8 @@ of type `ERROR`. With `verbose` parameter set to `true`, it may additionally:
 Example output of the latency information:
 
 ```
-INFO: [HUMANsecurity]: impl JS time to init (ms): 6.
-INFO: [HUMANsecurity]: impl JS time to collect (ms): 13.
+INFO: [humansecurity]: impl JS time to init (ms): 6.
+INFO: [humansecurity]: impl JS time to collect (ms): 13.
 ```
 
 Here, the two reported metrics are how much time the signal collection script spent blocking on initialization,
